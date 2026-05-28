@@ -28,6 +28,7 @@ export default function HomePage() {
 
   const [sortBy, setSortBy] = useState("breed_name")
   const [sortOrder, setSortOrder] = useState("asc")
+  const [search, setSearch] = useState("")
 
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false)
 
@@ -79,14 +80,46 @@ export default function HomePage() {
 
   const activeCount = countActiveFilters(breedGroups, sizes, ranges)
 
+  const visibleDogs = search.trim()
+    ? dogs.filter((d) => d.breed_name.toLowerCase().includes(search.trim().toLowerCase()))
+    : dogs
+  const visibleTotal = search.trim() ? visibleDogs.length : total
+
   return (
     <div className="max-w-screen-xl mx-auto px-4 py-6">
-      {/* Hero heading */}
+      {/* Hero heading + search */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-slate-800">Find Your Perfect Dog Breed</h1>
-        <p className="text-slate-500 text-sm mt-1">
+        <p className="text-slate-500 text-sm mt-1 mb-4">
           Explore {total > 0 ? total : "391"} breeds and find the one that fits your lifestyle
         </p>
+        <div className="relative max-w-lg">
+          <svg
+            className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none"
+            fill="none" viewBox="0 0 24 24" stroke="currentColor"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+              d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+          </svg>
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search breed name…"
+            className="w-full pl-10 pr-10 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-700
+              bg-white focus:outline-none focus:ring-2 focus:ring-orange-300 placeholder:text-slate-400"
+          />
+          {search && (
+            <button
+              onClick={() => setSearch("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="flex gap-6">
@@ -108,12 +141,12 @@ export default function HomePage() {
         {/* Main content */}
         <div className="flex-1 min-w-0">
           <SortBar
-            total={total}
+            total={visibleTotal}
             sortBy={sortBy}
             sortOrder={sortOrder}
             onSortChange={(by, order) => { setSortBy(by); setSortOrder(order) }}
           />
-          <DogGrid dogs={dogs} loading={loading} error={error} />
+          <DogGrid dogs={visibleDogs} loading={loading} error={error} />
         </div>
       </div>
 
