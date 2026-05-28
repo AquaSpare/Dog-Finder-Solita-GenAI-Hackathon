@@ -1,11 +1,23 @@
 from pydantic import BaseModel
 from typing import Optional
+from enum import Enum
+
+
+class BreedGroup(str, Enum):
+    working = "Working Dogs"
+    herding = "Herding Dogs"
+    mixed = "Mixed Breed Dogs"
+    companion = "Companion Dogs"
+    hybrid = "Hybrid Dogs"
+    terrier = "Terrier Dogs"
+    hound = "Hound Dogs"
+    sporting = "Sporting Dogs"
 
 
 class DogBase(BaseModel):
     breed_name: str
     size: Optional[str] = None
-    breed_group: Optional[str] = None
+    breed_group: Optional[BreedGroup] = None
     height: Optional[str] = None
     avg_height_cm: Optional[float] = None
     weight: Optional[str] = None
@@ -60,3 +72,13 @@ class DogOut(DogBase):
 class DogListResponse(BaseModel):
     total: int
     items: list[DogOut]
+
+
+class ChatRequest(BaseModel):
+    question: str
+    session_id: Optional[str] = None
+
+
+class ChatResponse(BaseModel):
+    answer: str
+    session_id: str
