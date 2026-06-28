@@ -36,8 +36,9 @@ export default function RangeSlider({ min, max, onChange }) {
           step={1}
           value={min}
           onChange={handleMin}
-          className="absolute w-full appearance-none bg-transparent cursor-pointer
+          className="absolute w-full appearance-none bg-transparent cursor-pointer pointer-events-none
             [&::-webkit-slider-thumb]:appearance-none
+            [&::-webkit-slider-thumb]:pointer-events-auto
             [&::-webkit-slider-thumb]:w-4
             [&::-webkit-slider-thumb]:h-4
             [&::-webkit-slider-thumb]:rounded-full
@@ -48,6 +49,7 @@ export default function RangeSlider({ min, max, onChange }) {
             [&::-webkit-slider-thumb]:cursor-pointer
             [&::-webkit-slider-track]:appearance-none
             [&::-webkit-slider-track]:bg-transparent
+            [&::-moz-range-thumb]:pointer-events-auto
             [&::-moz-range-thumb]:w-4
             [&::-moz-range-thumb]:h-4
             [&::-moz-range-thumb]:rounded-full
@@ -65,8 +67,9 @@ export default function RangeSlider({ min, max, onChange }) {
           step={1}
           value={max}
           onChange={handleMax}
-          className="absolute w-full appearance-none bg-transparent cursor-pointer
+          className="absolute w-full appearance-none bg-transparent cursor-pointer pointer-events-none
             [&::-webkit-slider-thumb]:appearance-none
+            [&::-webkit-slider-thumb]:pointer-events-auto
             [&::-webkit-slider-thumb]:w-4
             [&::-webkit-slider-thumb]:h-4
             [&::-webkit-slider-thumb]:rounded-full
@@ -77,6 +80,7 @@ export default function RangeSlider({ min, max, onChange }) {
             [&::-webkit-slider-thumb]:cursor-pointer
             [&::-webkit-slider-track]:appearance-none
             [&::-webkit-slider-track]:bg-transparent
+            [&::-moz-range-thumb]:pointer-events-auto
             [&::-moz-range-thumb]:w-4
             [&::-moz-range-thumb]:h-4
             [&::-moz-range-thumb]:rounded-full
