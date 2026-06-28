@@ -1,4 +1,4 @@
-const BASE = "http://localhost:8000"
+const BASE = import.meta.env.VITE_API_URL || "http://localhost:8000"
 
 const RANGE_ATTR_MAP = {
   apartment_friendly: ["min_apartment_friendly", "max_apartment_friendly"],

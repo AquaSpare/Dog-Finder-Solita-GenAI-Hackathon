@@ -1,14 +1,21 @@
-"""Seed the database from the scraped CSV. Safe to re-run (upserts by breed_name)."""
+"""Seed the database by POSTing breeds to the running API.
 
-import sys
+Reads the scraped CSV and creates each breed via ``POST /dogs`` on the running
+backend (default http://localhost:8000, override with ``API_BASE_URL``).
+
+Re-runnable: the create endpoint returns 409 for a breed that already exists, so
+those rows are simply skipped. The API has no update endpoint, so existing rows
+are not refreshed — drop them first (or reset the database) if you need to reload.
+"""
+
 import os
+import sys
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-
+import httpx
 import polars as pl
-from app.database import SessionLocal, engine
-from app import models
-from app.database import Base
+from tqdm import tqdm
+
+API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000")
 
 CSV_PATH = os.path.join(
     os.path.dirname(__file__),
@@ -84,35 +91,37 @@ def _coerce(field: str, value):
 
 
 def main():
-    Base.metadata.create_all(bind=engine)
-
     df = pl.read_csv(CSV_PATH, infer_schema_length=0)
     df = df.rename({c: COLUMN_MAP[c] for c in df.columns if c in COLUMN_MAP})
 
-    db = SessionLocal()
-    seeded = 0
-    updated = 0
+    created = 0
+    skipped = 0
+    failed = 0
 
-    try:
-        for row in df.iter_rows(named=True):
-            data = {
+    with httpx.Client(base_url=API_BASE_URL, timeout=30.0) as client:
+        try:
+            client.get("/health").raise_for_status()
+        except httpx.HTTPError as exc:
+            sys.exit(f"API not reachable at {API_BASE_URL} ({exc}). Start the backend first.")
+
+        for row in tqdm(df.iter_rows(named=True), total=df.height, desc="Seeding"):
+            payload = {
                 field: _coerce(field, row.get(field))
                 for field in COLUMN_MAP.values()
                 if field in row
             }
-            existing = db.query(models.Dog).filter_by(breed_name=data["breed_name"]).first()
-            if existing:
-                for k, v in data.items():
-                    setattr(existing, k, v)
-                updated += 1
+            resp = client.post("/dogs", json=payload)
+            if resp.status_code == 201:
+                created += 1
+            elif resp.status_code == 409:
+                skipped += 1
             else:
-                db.add(models.Dog(**data))
-                seeded += 1
+                failed += 1
+                tqdm.write(f"  {payload.get('breed_name')}: {resp.status_code} {resp.text[:200]}")
 
-        db.commit()
-        print(f"Done: {seeded} inserted, {updated} updated ({seeded + updated} total breeds)")
-    finally:
-        db.close()
+    print(f"Done: {created} created, {skipped} skipped (already existed), {failed} failed")
+    if failed:
+        sys.exit(1)
 
 
 if __name__ == "__main__":

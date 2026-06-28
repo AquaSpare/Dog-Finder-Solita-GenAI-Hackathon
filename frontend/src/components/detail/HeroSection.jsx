@@ -68,7 +68,7 @@ export default function HeroSection({ dog }) {
             </div>
 
             {dog.description && (
-              <p className="text-sm text-slate-600 leading-relaxed line-clamp-4">
+              <p className="text-sm text-slate-600 leading-relaxed">
                 {dog.description}
               </p>
             )}
