@@ -57,7 +57,9 @@ class DogContext:
 
 
 class ChatResult(BaseModel):
-    answer: str = Field(description="The answer to the user's question about the dog breed")
+    answer: str = Field(
+        description="The answer to the user's question about the dog breed"
+    )
 
 
 model = OpenAIChatModel(
@@ -137,4 +139,6 @@ async def answer_dog_question(
         raise HTTPException(status_code=504, detail="Request timed out")
     except Exception:
         logger.exception("Unexpected error in chat for breed: %s", context.breed_name)
-        raise HTTPException(status_code=502, detail="Failed to get a response from the AI")
+        raise HTTPException(
+            status_code=502, detail="Failed to get a response from the AI"
+        )

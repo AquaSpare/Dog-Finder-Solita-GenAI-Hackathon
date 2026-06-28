@@ -100,7 +100,11 @@ def list_dogs(
         (models.Dog.tolerates_cold, min_tolerates_cold, max_tolerates_cold),
         (models.Dog.tolerates_hot, min_tolerates_hot, max_tolerates_hot),
         (models.Dog.friendliness, min_friendliness, max_friendliness),
-        (models.Dog.affectionate_family, min_affectionate_family, max_affectionate_family),
+        (
+            models.Dog.affectionate_family,
+            min_affectionate_family,
+            max_affectionate_family,
+        ),
         (models.Dog.kid_friendly, min_kid_friendly, max_kid_friendly),
         (models.Dog.dog_friendly, min_dog_friendly, max_dog_friendly),
         (models.Dog.stranger_friendly, min_stranger_friendly, max_stranger_friendly),
@@ -109,7 +113,11 @@ def list_dogs(
         (models.Dog.drooling, min_drooling, max_drooling),
         (models.Dog.easy_groom, min_easy_groom, max_easy_groom),
         (models.Dog.general_health, min_general_health, max_general_health),
-        (models.Dog.weight_gain_potential, min_weight_gain_potential, max_weight_gain_potential),
+        (
+            models.Dog.weight_gain_potential,
+            min_weight_gain_potential,
+            max_weight_gain_potential,
+        ),
         (models.Dog.size_score, min_size_score, max_size_score),
         (models.Dog.trainability, min_trainability, max_trainability),
         (models.Dog.easy_train, min_easy_train, max_easy_train),
@@ -143,7 +151,9 @@ def list_dogs(
     }
     sort_col = SORTABLE.get(sort_by, models.Dog.breed_name)
     total = q.count()
-    items = q.order_by(sort_col.desc() if sort_order == "desc" else sort_col.asc()).all()
+    items = q.order_by(
+        sort_col.desc() if sort_order == "desc" else sort_col.asc()
+    ).all()
     return {"total": total, "items": items}
 
 
@@ -157,7 +167,9 @@ def get_dog(dog_id: int, db: Session = Depends(get_db)):
 
 @router.post("", response_model=schemas.DogOut, status_code=201)
 def create_dog(dog_in: schemas.DogCreate, db: Session = Depends(get_db)):
-    existing = db.query(models.Dog).filter(models.Dog.breed_name == dog_in.breed_name).first()
+    existing = (
+        db.query(models.Dog).filter(models.Dog.breed_name == dog_in.breed_name).first()
+    )
     if existing:
         raise HTTPException(status_code=409, detail="Breed already exists")
     dog = models.Dog(**dog_in.model_dump())
@@ -216,5 +228,7 @@ async def chat_about_dog(
         playfulness=dog.playfulness,
         description=dog.description,
     )
-    answer, session_id = await answer_dog_question(context, body.question, body.session_id)
+    answer, session_id = await answer_dog_question(
+        context, body.question, body.session_id
+    )
     return schemas.ChatResponse(answer=answer, session_id=session_id)

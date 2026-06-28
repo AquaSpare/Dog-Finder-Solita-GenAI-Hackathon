@@ -68,11 +68,28 @@ COLUMN_MAP = {
 }
 
 INT_FIELDS = {
-    "apartment_friendly", "good_for_novice", "sensitivity", "tolerates_alone",
-    "tolerates_cold", "tolerates_hot", "affectionate_family", "kid_friendly",
-    "dog_friendly", "stranger_friendly", "shedding", "easy_groom", "general_health",
-    "weight_gain_potential", "size_score", "easy_train", "intelligence",
-    "mouthiness", "wanderlust", "energy_level", "intensity", "exercise_needs",
+    "apartment_friendly",
+    "good_for_novice",
+    "sensitivity",
+    "tolerates_alone",
+    "tolerates_cold",
+    "tolerates_hot",
+    "affectionate_family",
+    "kid_friendly",
+    "dog_friendly",
+    "stranger_friendly",
+    "shedding",
+    "easy_groom",
+    "general_health",
+    "weight_gain_potential",
+    "size_score",
+    "easy_train",
+    "intelligence",
+    "mouthiness",
+    "wanderlust",
+    "energy_level",
+    "intensity",
+    "exercise_needs",
     "playfulness",
 }
 
@@ -102,7 +119,9 @@ def main():
         try:
             client.get("/health").raise_for_status()
         except httpx.HTTPError as exc:
-            sys.exit(f"API not reachable at {API_BASE_URL} ({exc}). Start the backend first.")
+            sys.exit(
+                f"API not reachable at {API_BASE_URL} ({exc}). Start the backend first."
+            )
 
         for row in tqdm(df.iter_rows(named=True), total=df.height, desc="Seeding"):
             payload = {
@@ -117,9 +136,13 @@ def main():
                 skipped += 1
             else:
                 failed += 1
-                tqdm.write(f"  {payload.get('breed_name')}: {resp.status_code} {resp.text[:200]}")
+                tqdm.write(
+                    f"  {payload.get('breed_name')}: {resp.status_code} {resp.text[:200]}"
+                )
 
-    print(f"Done: {created} created, {skipped} skipped (already existed), {failed} failed")
+    print(
+        f"Done: {created} created, {skipped} skipped (already existed), {failed} failed"
+    )
     if failed:
         sys.exit(1)
 
