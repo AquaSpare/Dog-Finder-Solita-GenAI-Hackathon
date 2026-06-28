@@ -61,7 +61,7 @@ class ChatResult(BaseModel):
 
 
 model = OpenAIChatModel(
-    "gpt-4.1-mini",
+    "gpt-5.4-mini",
     provider=AzureProvider(
         azure_endpoint=os.environ.get("AZURE_OPENAI_ENDPOINT"),
         api_version=os.environ.get("AZURE_OPENAI_API_VERSION"),
