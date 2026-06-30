@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 
 from app.agent import DogContext, answer_dog_question
@@ -16,7 +17,7 @@ def _rating_query():
 
 
 @router.get("", response_model=schemas.DogListResponse)
-def list_dogs(
+async def list_dogs(
     size: Optional[str] = Query(None),
     breed_group: Optional[BreedGroup] = Query(None),
     # Adaptability
@@ -86,14 +87,14 @@ def list_dogs(
     max_playfulness: Optional[int] = _rating_query(),
     sort_by: Optional[str] = Query(None),
     sort_order: Optional[str] = Query("asc"),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
-    q = db.query(models.Dog)
+    stmt = select(models.Dog)
 
     if size:
-        q = q.filter(models.Dog.size == size)
+        stmt = stmt.where(models.Dog.size == size)
     if breed_group:
-        q = q.filter(models.Dog.breed_group == breed_group.value)
+        stmt = stmt.where(models.Dog.breed_group == breed_group.value)
 
     range_filters = [
         (models.Dog.apartment_friendly, min_apartment_friendly, max_apartment_friendly),
@@ -138,9 +139,9 @@ def list_dogs(
 
     for column, min_val, max_val in range_filters:
         if min_val is not None:
-            q = q.filter(column >= min_val)
+            stmt = stmt.where(column >= min_val)
         if max_val is not None:
-            q = q.filter(column <= max_val)
+            stmt = stmt.where(column <= max_val)
 
     SORTABLE = {
         "breed_name": models.Dog.breed_name,
@@ -153,51 +154,51 @@ def list_dogs(
         "playfulness": models.Dog.playfulness,
     }
     sort_col = SORTABLE.get(sort_by, models.Dog.breed_name)
-    total = q.count()
-    items = q.order_by(
-        sort_col.desc() if sort_order == "desc" else sort_col.asc()
-    ).all()
+    total = await db.scalar(select(func.count()).select_from(stmt.subquery()))
+    stmt = stmt.order_by(sort_col.desc() if sort_order == "desc" else sort_col.asc())
+    result = await db.execute(stmt)
+    items = result.scalars().all()
     return {"total": total, "items": items}
 
 
 @router.get("/{dog_id}", response_model=schemas.DogOut)
-def get_dog(dog_id: int, db: Session = Depends(get_db)):
-    dog = db.query(models.Dog).filter(models.Dog.id == dog_id).first()
+async def get_dog(dog_id: int, db: AsyncSession = Depends(get_db)):
+    dog = await db.get(models.Dog, dog_id)
     if not dog:
         raise HTTPException(status_code=404, detail="Dog not found")
     return dog
 
 
 @router.post("", response_model=schemas.DogOut, status_code=201)
-def create_dog(dog_in: schemas.DogCreate, db: Session = Depends(get_db)):
-    existing = (
-        db.query(models.Dog).filter(models.Dog.breed_name == dog_in.breed_name).first()
+async def create_dog(dog_in: schemas.DogCreate, db: AsyncSession = Depends(get_db)):
+    existing = await db.scalar(
+        select(models.Dog).where(models.Dog.breed_name == dog_in.breed_name)
     )
     if existing:
         raise HTTPException(status_code=409, detail="Breed already exists")
     dog = models.Dog(**dog_in.model_dump())
     db.add(dog)
-    db.commit()
-    db.refresh(dog)
+    await db.commit()
+    await db.refresh(dog)
     return dog
 
 
 @router.delete("/{dog_id}", status_code=204)
-def delete_dog(dog_id: int, db: Session = Depends(get_db)):
-    dog = db.query(models.Dog).filter(models.Dog.id == dog_id).first()
+async def delete_dog(dog_id: int, db: AsyncSession = Depends(get_db)):
+    dog = await db.get(models.Dog, dog_id)
     if not dog:
         raise HTTPException(status_code=404, detail="Dog not found")
-    db.delete(dog)
-    db.commit()
+    await db.delete(dog)
+    await db.commit()
 
 
 @router.post("/{dog_id}/chat", response_model=schemas.ChatResponse)
 async def chat_about_dog(
     dog_id: int,
     body: schemas.ChatRequest,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> schemas.ChatResponse:
-    dog = db.query(models.Dog).filter(models.Dog.id == dog_id).first()
+    dog = await db.get(models.Dog, dog_id)
     if not dog:
         raise HTTPException(status_code=404, detail="Dog not found")
     context = DogContext(

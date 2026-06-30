@@ -1,24 +1,21 @@
 import os
 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, DeclarativeBase
+from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
     "postgresql+psycopg://dogs:dogs@localhost:5432/dogs_db",
 )
 
-engine = create_engine(DATABASE_URL, pool_pre_ping=True)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+engine = create_async_engine(DATABASE_URL, pool_pre_ping=True)
+SessionLocal = async_sessionmaker(engine, expire_on_commit=False, autoflush=False)
 
 
 class Base(DeclarativeBase):
     pass
 
 
-def get_db():
-    db = SessionLocal()
-    try:
+async def get_db():
+    async with SessionLocal() as db:
         yield db
-    finally:
-        db.close()
