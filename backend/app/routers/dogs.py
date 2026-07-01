@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 
 from app.agent import DogContext, answer_dog_question
+from app.breed_enrichment import generate_and_store_embedding
 from app.database import get_db
 from app import models, schemas
 from app.schemas import BreedGroup
@@ -170,7 +171,11 @@ async def get_dog(dog_id: int, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("", response_model=schemas.DogOut, status_code=201)
-async def create_dog(dog_in: schemas.DogCreate, db: AsyncSession = Depends(get_db)):
+async def create_dog(
+    dog_in: schemas.DogCreate,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db),
+):
     existing = await db.scalar(
         select(models.Dog).where(models.Dog.breed_name == dog_in.breed_name)
     )
@@ -180,7 +185,21 @@ async def create_dog(dog_in: schemas.DogCreate, db: AsyncSession = Depends(get_d
     db.add(dog)
     await db.commit()
     await db.refresh(dog)
+    background_tasks.add_task(generate_and_store_embedding, dog.id)
     return dog
+
+
+@router.get("/{dog_id}/embedding")
+async def get_dog_embedding(dog_id: int, db: AsyncSession = Depends(get_db)):
+    dog = await db.get(models.Dog, dog_id)
+    if not dog:
+        raise HTTPException(status_code=404, detail="Dog not found")
+    return {
+        "id": dog.id,
+        "breed_name": dog.breed_name,
+        "owner_summary": dog.owner_summary,
+        "embedding": dog.embedding.tolist() if dog.embedding is not None else None,
+    }
 
 
 @router.delete("/{dog_id}", status_code=204)

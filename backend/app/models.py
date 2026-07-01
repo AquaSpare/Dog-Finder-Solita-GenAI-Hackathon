@@ -1,5 +1,11 @@
+import os
+
+from pgvector.sqlalchemy import Vector
 from sqlalchemy import Column, Integer, String, Float, Text
+
 from app.database import Base
+
+EMBEDDING_DIM = int(os.environ.get("AZURE_OPENAI_EMBEDDING_DIMENSIONS", "1536"))
 
 
 class Dog(Base):
@@ -48,3 +54,5 @@ class Dog(Base):
     playfulness = Column(Integer)
     description = Column(Text)
     image_url = Column(String(500))
+    owner_summary = Column(Text)
+    embedding = Column(Vector(EMBEDDING_DIM))

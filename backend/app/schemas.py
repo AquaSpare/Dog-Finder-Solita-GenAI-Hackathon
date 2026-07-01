@@ -65,6 +65,7 @@ class DogCreate(DogBase):
 
 class DogOut(DogBase):
     id: int
+    owner_summary: Optional[str] = None
 
     model_config = {"from_attributes": True}
 

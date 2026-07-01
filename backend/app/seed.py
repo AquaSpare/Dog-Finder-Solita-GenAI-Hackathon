@@ -8,6 +8,7 @@ those rows are simply skipped. The API has no update endpoint, so existing rows
 are not refreshed — drop them first (or reset the database) if you need to reload.
 """
 
+import argparse
 import os
 import sys
 
@@ -108,8 +109,19 @@ def _coerce(field: str, value):
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--limit",
+        type=int,
+        default=None,
+        help="Only POST the first N rows from the CSV (useful when testing enrichment).",
+    )
+    args = parser.parse_args()
+
     df = pl.read_csv(CSV_PATH, infer_schema_length=0)
     df = df.rename({c: COLUMN_MAP[c] for c in df.columns if c in COLUMN_MAP})
+    if args.limit is not None:
+        df = df.head(args.limit)
 
     created = 0
     skipped = 0
